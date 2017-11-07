@@ -55,9 +55,23 @@ def close_db(error):
 @app.route('/')
 def show_entries():
     db = get_db()
-    cur = db.execute('select title, text from entries order by id desc')
+    cur = db.execute('select id, title, text from entries order by id desc')
     entries = cur.fetchall()
     return render_template('show_entries.html', entries=entries)
+    
+@app.route('/post/<int:postID>')
+def show_entry(postID):
+    db = get_db()
+    cur = db.execute('select id, title, text from entries where id = ?', (postID,))
+    entry = cur.fetchone()
+    comments = show_comments(postID)
+    return render_template('show_post.html', entry=entry, comments=comments)
+    
+def show_comments(postID):
+    db = get_db()
+    cur = db.execute('select id, name, text from comments where entry_id = ? order by id desc', (postID,))
+    comments = cur.fetchall()
+    return comments
     
 @app.route('/add', methods=['POST'])
 def add_entry():
@@ -69,6 +83,17 @@ def add_entry():
     db.commit()
     flash('New entry was successfully posted')
     return redirect(url_for('show_entries'))
+    
+@app.route('/addcomment/<int:entry_id>', methods=['POST'])
+def add_comment(entry_id):
+    # if not session.get('logged_in'):
+    #     abort(401)
+    db = get_db()
+    db.execute('insert into comments (name, text, entry_id) values (?, ?, ?)',
+                 [request.form['name'], request.form['text'], entry_id])
+    db.commit()
+    flash('New comment was successfully posted')
+    return redirect(url_for('show_entry', postID=entry_id))    
     
 @app.route('/login', methods=['GET', 'POST'])
 def login():
