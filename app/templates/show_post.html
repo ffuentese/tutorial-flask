@@ -6,7 +6,7 @@
      <div> {{ entry.text|safe }} </div>
         
         {% if session['logged_in'] == True %}
-        <p class="delete"><a href="{{ url_for('del_entry', entry_id=entry.id) }}" class="delete">Delete post</a>
+        <p class="delete"><a href="{{ url_for('del_entry', entry_id=entry.id) }}" class="delete" onclick="return confirm('¿Está seguro?');">Delete post</a>
         {% endif %}
         <h2>¡Comenta!</h2>
          

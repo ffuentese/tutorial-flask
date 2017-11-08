@@ -113,8 +113,8 @@ def add_comment(entry_id):
     return redirect(url_for('show_entry', postID=entry_id))    
     
 @app.route('/del/<int:entry_id>', methods=['GET'])
-"""Elimina un post con el id como param. Exige inicio de sesión.  """
 def del_entry(entry_id):
+    """Elimina un post con el id como param. Exige inicio de sesión."""
     if not session.get('logged_in'):
         abort(401)
     db = get_db()
