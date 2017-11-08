@@ -1,11 +1,19 @@
+# -*- coding: utf-8 -*-
 # all the imports
 import os
 import sqlite3 
 from app import app
 from flask import Flask, request, session, g, redirect, url_for, abort, \
 render_template, flash
+import re
+from markdown import markdown
 
-
+_lt_     = re.compile('<')
+_tc_ = '~(lt)~'   # or whatever, so long as markdown doesn't mangle it.     
+_ok_ = re.compile(_tc_ + '(/?(?:u|b|i|em|strong|sup|sub|p|br|q|blockquote|code))>', re.I)
+_sqrt_ = re.compile(_tc_ + 'sqrt>', re.I)     #just to give an example of extending
+_endsqrt_ = re.compile(_tc_ + '/sqrt>', re.I) #html syntax with your own elements.
+_tcre_ = re.compile(_tc_)
 
 
 # Load default config and override config from an environment variable
@@ -18,7 +26,14 @@ app.config.update(dict(
 ))
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
     
-
+def sanitize(text): # Función que escapa el texto para evitar ciertas etiquetas 
+#HTML y código malicioso mientras que permite otros. Depende del módulo markdown.
+    text = _lt_.sub(_tc_, text)
+    text = markdown(text)
+    text = _ok_.sub(r'<\1>', text)
+    text = _sqrt_.sub(r'&radic;<span style="text-decoration:overline;">', text)
+    text = _endsqrt_.sub(r'</span>', text)
+    return _tcre_.sub('&lt;', text)
 
 def connect_db():
     """Connects to the specific database."""
@@ -78,8 +93,9 @@ def add_entry():
     if not session.get('logged_in'):
         abort(401)
     db = get_db()
+    text = sanitize(request.form['text'])
     db.execute('insert into entries (title, text) values (?, ?)',
-                 [request.form['title'], request.form['text']])
+                 [request.form['title'], text])
     db.commit()
     flash('New entry was successfully posted')
     return redirect(url_for('show_entries'))
@@ -89,11 +105,24 @@ def add_comment(entry_id):
     # if not session.get('logged_in'):
     #     abort(401)
     db = get_db()
+    text = sanitize(request.form['text'])
     db.execute('insert into comments (name, text, entry_id) values (?, ?, ?)',
-                 [request.form['name'], request.form['text'], entry_id])
+                 [request.form['name'], sanitize(request.form['text']), entry_id])
     db.commit()
     flash('New comment was successfully posted')
     return redirect(url_for('show_entry', postID=entry_id))    
+    
+@app.route('/del/<int:entry_id>', methods=['GET'])
+"""Elimina un post con el id como param. Exige inicio de sesión.  """
+def del_entry(entry_id):
+    if not session.get('logged_in'):
+        abort(401)
+    db = get_db()
+    db.execute('delete from entries where id = ?',
+                 (entry_id,))
+    db.commit()
+    flash('Entry #'+str(entry_id)+' was deleted.')
+    return redirect(url_for('show_entries'))
     
 @app.route('/login', methods=['GET', 'POST'])
 def login():

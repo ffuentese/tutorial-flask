@@ -1,36 +1,42 @@
 {% extends "layout.html" %}
 {% block body %}
 {% if entry %}
-<ul class=entries>
+<div class=entries>
          <h2>{{ entry.title }}</h2>
-     
-         {{ entry.text|safe }}
+     <div> {{ entry.text|safe }} </div>
+        
+        {% if session['logged_in'] == True %}
+        <p class="delete"><a href="{{ url_for('del_entry', entry_id=entry.id) }}" class="delete">Delete post</a>
+        {% endif %}
+        <h2>¡Comenta!</h2>
          
       <form action="{{ url_for('add_comment', entry_id=entry.id) }}" method=post class=add-entry>
       <dl>
-        <dt>Name:
+        <dt>Nombre:
         <dd><input type=text size=30 name=name>
-        <dt>Text:
+        <dt>Texto:
         <dd><textarea name=text rows=5 cols=40></textarea>
         <dd><input type=submit value=Share>
       </dl>
       </form>
-</ul>         
+</div>         
 {% if comments %}
-<ul>
+<div class="comments">
     {% for comment in comments %}
     <h3>{{comment.name}}</h3>
     
     <p>{{comment.text|safe}}</p>
     {% endfor %}
-</ul>
+</div>
 {% else %}
-<p>No hay comentarios hasta el momento. Comenta!</p>
+<div class="comments">
+<p>No hay comentarios hasta el momento. ¡Comenta!</p>
+</div>
 {% endif %}
 
      {% else %}
- 
-         <p>Unbelievable! I can't find that post in my database</p>
-  
+ <div class=entries>
+         <p>¡Increíble! No puedo encontrar ese post en mi base de datos</p>
+  </div>
     {% endif %}
 {% endblock %}
